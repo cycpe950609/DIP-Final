@@ -1,0 +1,6 @@
+*.mat
+.ipynb_checkpoints
+
+database/image/
+database/mask/
+database/parsing/
