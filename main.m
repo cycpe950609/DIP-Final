@@ -56,6 +56,27 @@ for i = 0:13
     tn_x_(i+1) = LIn + cBeta*( LRn - LIn );
 end
 
+% Get foreground's new L
+target_img_l = target_image(:,:,COLOR_L);
+mean_without_sky_target_l = mean( target_img_l( target_weight.predict_label ~= SKY ) , 'all' );
+target_img_a = target_image(:,:,COLOR_a);
+mean_without_sky_target_a = mean( target_img_a( target_weight.predict_label ~= SKY ) , 'all' );
+target_img_b = target_image(:,:,COLOR_b);
+mean_without_sky_target_b = mean( target_img_b( target_weight.predict_label ~= SKY ) , 'all' );
+
+guided_img_l = guided_image(:,:,COLOR_L);
+mean_without_sky_guided_l = mean( guided_img_l( guided_weight.predict_label ~= SKY ) , 'all' );
+guided_img_a = guided_image(:,:,COLOR_a);
+mean_without_sky_guided_a = mean( guided_img_a( guided_weight.predict_label ~= SKY ) , 'all' );
+guided_img_b = guided_image(:,:,COLOR_b);
+mean_without_sky_guided_b = mean( guided_img_b( guided_weight.predict_label ~= SKY ) , 'all' );
+
+color_diff_without_sky = sqrt( ( mean_without_sky_guided_a - mean_without_sky_target_a )^2 + ( mean_without_sky_guided_b - mean_without_sky_target_b )^2 );
+
+nBeta = tanh(color_diff_without_sky);
+
+L_non_matched = mean_without_sky_target_l + nBeta*( mean_without_sky_guided_l - mean_without_sky_target_l );
+
 img_rlt = target_image;
 for i = 1 : 500
     for j = 1:500
@@ -64,10 +85,12 @@ for i = 1 : 500
 
         if(isInGuided( target_weight.predict_label(i,j) + 1 ))
             % Use T(x)
-            img_rlt(i,j) = getMatchedTransform( target_image(i,j) , guided_image(i,j) , tn_x_ , wn_x_ );
+            img_rlt(i,j) = getMatchedTransform( target_image(i,j) , guided_image , guided_weight , tn_x_ , wn_x_ );
         else
             % Use Color Temperature transform
-            img_rlt(i,j) = getNOTMatchedTransformer() ;
+            img_rlt(i,j) = getNOTMatchedTransformer( target_image(i,j) , guided_image , guided_weight , L_non_matched ) ;
         end 
     end
 end
+
+imshow( lab2rgb(img_rlt) );
