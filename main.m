@@ -60,7 +60,7 @@ img_rlt = target_image;
 for i = 1 : 500
     for j = 1:500
         % Get Wn_x
-        wn_x_ = getNormalizeWeight(target_weight.predict_value(i,j),,SKY);
+        wn_x_ = getNormalizeWeight(target_weight.predict_value(i,j),0.1,SKY);
 
         if(isInGuided( target_weight.predict_label(i,j) + 1 ))
             % Use T(x)
