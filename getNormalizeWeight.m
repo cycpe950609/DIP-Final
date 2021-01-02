@@ -8,7 +8,7 @@ function rtv_weights = getNormalizeWeight(weights,threshold,label)% label : å› ç
         end
     end
     
-    rtv_weights(label-1) = 0;
+    rtv_weights(label+1) = 0;
 
     rtv_weights = rtv_weights./sum(rtv_weights);
 end

@@ -7,7 +7,7 @@ COLOR_b = 3;
 
 
 target_name = '0001';
-guided_name = '0004';
+guided_name = '0002';
 
 target_weight   = load(['MAToutput/',target_name,'.mat']);
 guided_weight   = load(['MAToutput/',guided_name,'.mat']);
@@ -88,14 +88,14 @@ for i = 1 : 500
         wn_x_ = getNormalizeWeight(target_weight.predict_value(:,i,j).',0.1,SKY);
 
         color_target = target_image(i,j,:);
-        color_target = color_target(:).';
+        color_ta
         
         if(isInGuided( target_weight.predict_label(i,j) + 1 ))
             % Use T(x)
-            img_rlt(i,j,:) = getMatchedTransformer( color_target , guided_image , guided_weight , tn_x_ , wn_x_ );
+            img_rlt(i,j,:) = getMatchedTransformer(  , guided_image , guided_weight , tn_x_ , wn_x_ );
         else
             % Use Color Temperature transform
-            img_rlt(i,j,:) = getNOTMatchedTransformer( color_target , guided_image , guided_weight , L_non_matched ) ;
+            img_rlt(i,j,:) = getNOTMatchedTransformer( target_image(i,j,:) , guided_image , guided_weight , L_non_matched ) ;
         end 
     end
 end
