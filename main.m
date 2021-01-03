@@ -6,14 +6,19 @@ COLOR_b = 3;
 
 
 
-target_name = '0001';
-guided_name = '0005';
+target_name = '0137';
+guided_name = '0213';
 
 target_weight   = load(['MAToutput/',target_name,'.mat']);
 guided_weight   = load(['MAToutput/',guided_name,'.mat']);
 
 target_image    = rgb2lab( imresize( imread(['database/image/',target_name,'.png']) , [500 500] ) );
 guided_image    = rgb2lab( imresize( imread(['database/image/',guided_name,'.png']) , [500 500] ) );
+
+figure(100);
+imshow(lab2rgb(target_image));
+figure(200);
+imshow(lab2rgb(guided_image));
 
 threshold = 0.1;
 
@@ -88,29 +93,30 @@ nBeta = tanh(color_diff_without_sky);
 L_non_matched = mean_without_sky_target_l + nBeta*( mean_without_sky_guided_l - mean_without_sky_target_l );
 
 img_rlt = target_image;
-figure(100);
-imshow(lab2rgb(img_rlt));
+%figure(100);
+%imshow(lab2rgb(img_rlt));
 
 wn_x_ = getNormalizeWeight(target_weight.predict_value,1/(sum(isInTarget) - 1), isInTarget);
-for lbl = 1:13
-    if(~ismember(lbl, target_weight.predict_label))
-        continue;
-    end
-    if(isInGuided(lbl + 1))
-        [ L , a , b ] = getMatchedTransformer(target_image , guided_image , target_weight , guided_weight , lbl , ln_x_);
-    else
-        [ L , a , b ] = getNOTMatchedTransformer(target_image , guided_image , target_weight , guided_weight , lbl , repmat(L_non_matched,[1 14]));
-    end
+% for lbl = 1:13
+%     if(~ismember(lbl, target_weight.predict_label))
+%         continue;
+%     end
+%     if(isInGuided(lbl + 1))
+%         [ L , a , b ] = getMatchedTransformer(target_image , guided_image , target_weight , guided_weight , lbl , ln_x_);
+%     else
+%         [ L , a , b ] = getNOTMatchedTransformer(target_image , guided_image , target_weight , guided_weight , lbl , repmat(L_non_matched,[1 14]));
+%     end
 
-    likelihood = wn_x_(lbl + 1,:,:);
-    likelihood = likelihood(1,:,:);
-    img_rlt(:,:,1) = img_rlt(:,:,1) + likelihood(1).*L;
-    img_rlt(:,:,2) = img_rlt(:,:,2) + likelihood(1).*a;
-    img_rlt(:,:,3) = img_rlt(:,:,3) + likelihood(1).*b;
-    % figure(lbl);
-    % imshow(lab2rgb(img_rlt));
-end
+%     likelihood = wn_x_(lbl + 1,:,:);
+%     likelihood = likelihood(1,:,:);
+%     img_rlt(:,:,1) = img_rlt(:,:,1) + likelihood(1).*L;
+%     img_rlt(:,:,2) = img_rlt(:,:,2) + likelihood(1).*a;
+%     img_rlt(:,:,3) = img_rlt(:,:,3) + likelihood(1).*b;
+%     % figure(lbl);
+%     % imshow(lab2rgb(img_rlt));
+% end
 
+img_rlt = getBasicColorTransformer(target_image , guided_image , target_weight , guided_weight);
 
 % for i = 1 : 500
 %     for j = 1:500
