@@ -7,7 +7,7 @@ COLOR_b = 3;
 
 
 target_name = '0001';
-guided_name = '0004';
+guided_name = '0005';
 
 target_weight   = load(['MAToutput/',target_name,'.mat']);
 guided_weight   = load(['MAToutput/',guided_name,'.mat']);
@@ -24,6 +24,12 @@ threshold = 0.1;
 % img_rlt = arrayfun( transformFunc , target_image);
 
 % imshow(img_rlt);
+isInTarget = false(1,14);
+for i = 0:13
+    if(  ismember(i, target_weight.predict_label ) )
+        isInTarget(i+1) = true;
+    end
+end
 isInGuided = false(1,14);
 for i = 0:13
     if(  ismember(i, guided_weight.predict_label ) )
@@ -52,12 +58,12 @@ color_diff = sqrt( ( mean_a_sky_target - mean_a_sky_guided )^2 + ( mean_b_sky_ta
 % TODO : Beta is mean of ( mean of a ) and ( mean of b )
 cBeta = tanh(color_diff);
 
-% Get Tn(x)
-tn_x_ = zeros(1,14,'single'); 
+% Get Ln(x) : Mean of every transformed L
+ln_x_ = zeros(1,14,'single'); 
 for i = 0:13
     LIn = getMean(target_image,target_weight.predict_label,i,COLOR_L);
     LRn = getMean(guided_image,guided_weight.predict_label,i,COLOR_L);
-    tn_x_(i+1) = LIn + cBeta*( LRn - LIn );
+    ln_x_(i+1) = LIn + cBeta*( LRn - LIn );
 end
 
 % Get foreground's new L
@@ -82,23 +88,48 @@ nBeta = tanh(color_diff_without_sky);
 L_non_matched = mean_without_sky_target_l + nBeta*( mean_without_sky_guided_l - mean_without_sky_target_l );
 
 img_rlt = target_image;
-for i = 1 : 500
-    for j = 1:500
-        % Get Wn_x
-        wn_x_ = getNormalizeWeight(target_weight.predict_value(:,i,j).',0.1,SKY);
+figure(100);
+imshow(lab2rgb(img_rlt));
 
-        color_target = target_image(i,j,:);
-        color_target = color_target(:).';
-        
-        if(isInGuided( target_weight.predict_label(i,j) + 1 ))
-            % Use T(x)
-            img_rlt(i,j,:) = getMatchedTransformer( color_target , guided_image , guided_weight , tn_x_ , wn_x_ );
-        else
-            % Use Color Temperature transform
-            img_rlt(i,j,:) = getNOTMatchedTransformer( color_target , guided_image , guided_weight , L_non_matched ) ;
-        end 
+wn_x_ = getNormalizeWeight(target_weight.predict_value,1/(sum(isInTarget) - 1), isInTarget);
+for lbl = 1:13
+    if(~ismember(lbl, target_weight.predict_label))
+        continue;
     end
+    if(isInGuided(lbl + 1))
+        [ L , a , b ] = getMatchedTransformer(target_image , guided_image , target_weight , guided_weight , lbl , ln_x_);
+    else
+        [ L , a , b ] = getNOTMatchedTransformer(target_image , guided_image , target_weight , guided_weight , lbl , repmat(L_non_matched,[1 14]));
+    end
+
+    likelihood = wn_x_(lbl + 1,:,:);
+    likelihood = likelihood(1,:,:);
+    img_rlt(:,:,1) = img_rlt(:,:,1) + likelihood(1).*L;
+    img_rlt(:,:,2) = img_rlt(:,:,2) + likelihood(1).*a;
+    img_rlt(:,:,3) = img_rlt(:,:,3) + likelihood(1).*b;
+    % figure(lbl);
+    % imshow(lab2rgb(img_rlt));
 end
 
+
+% for i = 1 : 500
+%     for j = 1:500
+%         % Get Wn_x
+%         wn_x_ = getNormalizeWeight(target_weight.predict_value(:,i,j).',0.1,SKY);
+
+%         color_target = target_image(i,j,:);
+%         color_target = color_target(:).';
+        
+%         if(isInGuided( target_weight.predict_label(i,j) + 1 ))
+%             % Use T(x)
+%             img_rlt(i,j,:) = getMatchedTransformer( color_target , target_image , guided_image , target_weight , guided_weight , target_weight.predict_label(i,j) , tn_x_ , wn_x_ );
+%         else
+%             % Use Color Temperature transform
+%             img_rlt(i,j,:) = getNOTMatchedTransformer( color_target , guided_image , guided_weight , L_non_matched ) ;
+%         end 
+%     end
+% end
+
+figure(1000);
 imshow( lab2rgb(img_rlt) );
 
